@@ -8,3 +8,20 @@
 /* V4: destaque visual para os prazos rápidos e entrada personalizada */
 .custom-fields{grid-template-columns:minmax(0,1fr)}
 .choice:focus-visible,.text-button:focus-visible,.primary:focus-visible,.secondary:focus-visible{outline:3px solid #8ab2ff;outline-offset:2px}
+
+/* V5: áreas publicitárias sem interferir no formulário e na etiqueta. */
+.advertising{display:flex;flex-direction:column;align-items:center;gap:9px;margin:34px auto;max-width:100%;min-width:0}
+.ad-caption{font-size:11px;color:#697e9c;font-weight:650;letter-spacing:.4px}
+.ad-slot{display:flex;align-items:center;justify-content:center;max-width:100%;min-width:0}
+.ad-slot-rectangle{width:300px;min-height:250px}
+.ad-slot-rectangle ins{display:block;max-width:100%}
+.advertising-secondary{margin-top:6px;margin-bottom:34px}
+@media print{.advertising{display:none!important}}
+
+/* Quatro posições publicitárias independentes. */
+.ads-bottom{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:22px;align-items:start;justify-items:center;margin:0 auto 34px}
+.ads-bottom .advertising{margin:0;width:100%}
+.ad-caption{font-size:11px;color:#8392a9;letter-spacing:.03em}
+.ad-slot-rectangle{overflow:visible}
+@media(max-width:680px){.ads-bottom{grid-template-columns:1fr;gap:30px}.advertising{margin:26px auto}}
+@media print{.ads-bottom,.advertising{display:none!important}}

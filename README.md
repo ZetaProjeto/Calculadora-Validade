@@ -1,4 +1,4 @@
-# ValidaBR 4.0 — Calculadora de validade
+# ValidaBR 6.0 — quatro anúncios — Calculadora de validade
 
 Site estático para GitHub Pages. Publique `index.html`, `style.css` e `script.js` na raiz do repositório.
 
@@ -22,3 +22,13 @@ Para remover a data, URL e título que o Chrome/Edge adiciona automaticamente à
 
 ## Segurança
 A ferramenta soma dias corridos e **não determina a validade sanitária do alimento**. Use o prazo estabelecido pelo fabricante ou responsável técnico; não substitua a validade impressa no rótulo.
+
+
+## Anúncios (V6)
+- Espaço 1 (`pbd10cc8a4f`): após apresentação, antes da calculadora.
+- Espaço 2 (`g5c0049fd98`): após calculadora e resultado, antes de "Como funciona?".
+- Espaço 3 (`ode9866d7d0`) e espaço 4 (`r6b887408b0`): após "Como funciona?", lado a lado em telas largas e empilhados em celulares.
+- Removidos o antigo bloco `s6fcb0d1b56` e o script `cdn-server.live`.
+- Os quatro scripts fornecidos foram incluídos sem alterar seus identificadores. O funcionamento e preenchimento dos anúncios dependem da rede externa.
+- Os anúncios são ocultados na impressão.
+- Confirme com a rede de publicidade as políticas para quatro placements e verifique privacidade/consentimento aplicável antes da publicação.
