@@ -1,79 +1,25 @@
 'use strict';
-const el = id => document.getElementById(id);
-const zone = 'America/Sao_Paulo';
-const dateFormat = new Intl.DateTimeFormat('pt-BR',{timeZone:zone,day:'2-digit',month:'2-digit',year:'numeric'});
-const weekdayFormat = new Intl.DateTimeFormat('pt-BR',{weekday:'long',timeZone:'UTC'});
-let selected = {amount:6,unit:'months',label:'6 meses'};
-let latest = null;
-// O relógio civil vem de uma fonte online quando possível, com fallback local.
-// Um horário remoto NÃO é necessário para somar meses: esta conta é determinística.
-function getBrazilToday(instant = new Date()){
-  const parts = dateFormat.formatToParts(instant);
-  const part = type => Number(parts.find(p=>p.type===type).value);
-  return `${part('year')}-${String(part('month')).padStart(2,'0')}-${String(part('day')).padStart(2,'0')}`;
-}
-function parseISO(s){
-  if(!/^\d{4}-\d{2}-\d{2}$/.test(s||''))throw new Error('Informe uma data válida.');
-  const [y,m,d]=s.split('-').map(Number);
-  const limit = new Date(Date.UTC(y,m,0)).getUTCDate();
-  if(y<1||y>9998||m<1||m>12||d<1||d>limit)throw new Error('Informe uma data válida.');
-  return {y,m,d};
-}
-function makeUTC(y,m,d){const result=new Date(0);result.setUTCHours(12,0,0,0);result.setUTCFullYear(y,m-1,d);return result;}
-function addMonths(date,amount){
-  const {y,m,d}=parseISO(date);
-  const monthIndex=y*12+(m-1)+amount;
-  const targetYear=Math.floor(monthIndex/12);
-  const targetMonth=monthIndex%12+1;
-  if(targetYear>9999)throw new Error('Prazo fora do intervalo permitido.');
-  const lastDay=new Date(Date.UTC(targetYear,targetMonth,0)).getUTCDate();
-  return makeUTC(targetYear,targetMonth,Math.min(d,lastDay));
-}
-function addDays(date,days){const {y,m,d}=parseISO(date);const out=makeUTC(y,m,d);out.setUTCDate(out.getUTCDate()+days);return out;}
-function fmt(date){return new Intl.DateTimeFormat('pt-BR',{timeZone:'UTC',day:'2-digit',month:'2-digit',year:'numeric'}).format(date);}
-function calc(){
-  el('error').hidden=true;
-  try{
-    const iso=el('baseDate').value;
-    const {y,m,d}=parseISO(iso);
-    const base=makeUTC(y,m,d);
-    let end;
-    if(selected.unit==='days')end=addDays(iso,selected.amount);
-    else end=addMonths(iso,selected.amount*(selected.unit==='years'?12:1));
-    if(end.getUTCFullYear()>9999)throw new Error('Prazo fora do intervalo permitido.');
-    const product=el('product').value.trim()||'Não informado';
-    latest={product,base:fmt(base),end:fmt(end),period:selected.label};
-    el('resultDate').textContent=latest.end;
-    el('resultWeekday').textContent=weekdayFormat.format(end);
-    el('referenceValue').textContent=latest.base;
-    el('periodValue').textContent=latest.period;
-    el('productValue').textContent=product;
-    el('printProduct').textContent=`Produto: ${product}`;
-    el('printManufacture').textContent=`Fabricação/referência: ${latest.base}`;
-    el('printExpiry').textContent=`Validade: ${latest.end}`;
-    el('printPeriod').textContent=`Prazo informado: ${latest.period}`;
-  }catch(err){latest=null;el('error').textContent=err.message;el('error').hidden=false;}
-}
-function setPeriod(amount,unit,label){selected={amount,unit,label};document.querySelectorAll('.choice').forEach(btn=>{const active=unit==='months'&&Number(btn.dataset.months)===amount;btn.classList.toggle('selected',active);btn.setAttribute('aria-pressed',String(active));});calc();}
-document.querySelectorAll('.choice').forEach(btn=>btn.addEventListener('click',()=>{const amount=Number(btn.dataset.months);setPeriod(amount,'months',amount===12?'1 ano':`${amount} ${amount===1?'mês':'meses'}`);}));
-el('applyCustom').addEventListener('click',()=>{const raw=el('customAmount').value;const amount=Number(raw);const unit=el('customUnit').value;if(!raw||!Number.isInteger(amount)||amount<1||amount>1200){el('error').hidden=false;el('error').textContent='Digite um prazo inteiro entre 1 e 1200.';return;}const single={days:'dia',months:'mês',years:'ano'};const plural={days:'dias',months:'meses',years:'anos'};setPeriod(amount,unit,`${amount} ${amount===1?single[unit]:plural[unit]}`);});
-el('calculate').addEventListener('click',calc);
-el('baseDate').addEventListener('change',calc);
-el('product').addEventListener('input',calc);
-el('todayBtn').addEventListener('click',()=>{el('baseDate').value=getBrazilToday();calc();});
-el('copy').addEventListener('click',async()=>{if(!latest)return;const text=`Produto: ${latest.product}\nData de fabricação/referência: ${latest.base}\nPrazo: ${latest.period}\nValidade: ${latest.end}`;try{await navigator.clipboard.writeText(text);el('copy').textContent='✓ Copiado!';setTimeout(()=>el('copy').textContent='⧉ Copiar resultado',1800);}catch{const input=document.createElement('textarea');input.value=text;document.body.appendChild(input);input.select();try{document.execCommand('copy');el('copy').textContent='✓ Copiado!';setTimeout(()=>el('copy').textContent='⧉ Copiar resultado',1800);}catch{el('error').hidden=false;el('error').textContent='Não foi possível copiar automaticamente neste navegador.';}input.remove();}});
-el('print').addEventListener('click',()=>{if(latest)window.print();});
-async function syncClock(){
-  const clock=el('clockInfo');
-  try{
-    const controller=new AbortController();const timer=setTimeout(()=>controller.abort(),4000);
-    let data;
-    try{const response=await fetch('https://worldtimeapi.org/api/timezone/America/Sao_Paulo',{signal:controller.signal,cache:'no-store'});if(!response.ok)throw Error('Indisponível');data=await response.json();}finally{clearTimeout(timer);}
-    if(!data.datetime||!Number.isFinite(Date.parse(data.datetime)))throw Error('Data inválida');
-    const onlineDate=getBrazilToday(new Date(data.datetime));
-    // Atualiza o valor inicial; não sobrescreve escolha manual do usuário.
-    if(el('baseDate').value===getBrazilToday()) {el('baseDate').value=onlineDate;calc();}
-    clock.textContent=`Data de Brasília verificada pela internet: ${fmt(makeUTC(...[Number(onlineDate.slice(0,4)),Number(onlineDate.slice(5,7)),Number(onlineDate.slice(8,10))]))}.`;
-  }catch{clock.textContent='Data de Brasília obtida do relógio do dispositivo. Não foi possível consultar a hora online; confirme se o aparelho está ajustado corretamente.';}
-}
-el('baseDate').value=getBrazilToday();calc();syncClock();
+const $ = id => document.getElementById(id);
+const brDate = new Intl.DateTimeFormat('pt-BR', {timeZone:'America/Sao_Paulo',year:'numeric',month:'2-digit',day:'2-digit'});
+const format = d => new Intl.DateTimeFormat('pt-BR',{timeZone:'UTC',day:'2-digit',month:'2-digit',year:'numeric'}).format(d);
+const weekday = d => new Intl.DateTimeFormat('pt-BR',{timeZone:'UTC',weekday:'long'}).format(d);
+let selected = {amount:60,unit:'days'};
+let mode='days', latest=null, manuallyChanged=false;
+function todayBR(date=new Date()) {const part=brDate.formatToParts(date);const get=k=>part.find(x=>x.type===k).value;return `${get('year')}-${get('month')}-${get('day')}`;}
+function utc(y,m,d){const x=new Date(0);x.setUTCHours(12,0,0,0);x.setUTCFullYear(y,m-1,d);return x;}
+function parse(value){if(!/^\d{4}-\d{2}-\d{2}$/.test(value||''))throw Error('Informe uma data válida.');const [y,m,d]=value.split('-').map(Number);if(y<1||y>9998||m<1||m>12||d<1||d>utc(y,m+1,0).getUTCDate())throw Error('Data inválida.');return {y,m,d};}
+function addDays(value,n){const {y,m,d}=parse(value);const x=utc(y,m,d);x.setUTCDate(x.getUTCDate()+n);return x;}
+function addMonths(value,n){const {y,m,d}=parse(value);const offset=y*12+m-1+n, yy=Math.floor(offset/12), mm=offset%12+1;if(yy>9999)throw Error('Prazo ultrapassa o limite do calendário.');const last=utc(yy,mm+1,0).getUTCDate();return utc(yy,mm,Math.min(d,last));}
+function daysBetween(a,b){return Math.round((Date.UTC(b.getUTCFullYear(),b.getUTCMonth(),b.getUTCDate())-Date.UTC(a.getUTCFullYear(),a.getUTCMonth(),a.getUTCDate()))/86400000);}
+function period(){const units={days:['dia corrido','dias corridos'],months:['mês de calendário','meses de calendário'],years:['ano de calendário','anos de calendário']};return `${selected.amount} ${units[selected.unit][selected.amount===1?0:1]}`;}
+function update(){ $('error').hidden=true;try{const iso=$('baseDate').value;const v=parse(iso), base=utc(v.y,v.m,v.d);const exp=selected.unit==='days'?addDays(iso,selected.amount):addMonths(iso,selected.amount*(selected.unit==='years'?12:1));if(exp.getUTCFullYear()>9999)throw Error('Prazo ultrapassa o limite do calendário.');const product=$('product').value.trim()||'Não informado', method=selected.unit==='days'?'Dias corridos':'Calendário (meses/anos)';latest={product,base:format(base),end:format(exp),period:period(),method,days:daysBetween(base,exp)};$('resultDate').textContent=latest.end;$('resultWeekday').textContent=weekday(exp);$('referenceValue').textContent=latest.base;$('periodValue').textContent=latest.period;$('productValue').textContent=product;$('methodValue').textContent=method;$('daysValue').textContent=`${latest.days} dias`;$('printProduct').textContent=`Produto: ${product}`;$('printManufacture').textContent=`Fabricação/referência: ${latest.base}`;$('printExpiry').textContent=`Data calculada: ${latest.end}`;$('printPeriod').textContent=`Prazo: ${latest.period} · Confirme o rótulo`; }catch(e){latest=null;$('error').textContent=e.message;$('error').hidden=false;$('resultDate').textContent='—';}}
+function select(n,unit){selected={amount:n,unit};document.querySelectorAll('.choice').forEach(btn=>{let active=Number(btn.dataset.amount)===n&&btn.dataset.unit===unit;btn.classList.toggle('selected',active);btn.setAttribute('aria-pressed',String(active));});$('customAmount').value=n;$('customUnit').value=unit;update();}
+function render(){const presets=mode==='days'?[30,60,90,180,365]:[1,2,3,6,12];const unit=mode==='days'?'days':'months';$('choices').replaceChildren(...presets.map(n=>{const b=document.createElement('button');b.type='button';b.className='choice';b.dataset.amount=n;b.dataset.unit=unit;b.innerHTML=`${n}<small>${unit==='days'?'dias':n===12?'1 ano':n===1?'mês':'meses'}</small>`;b.addEventListener('click',()=>select(n,unit));return b;}));$('modeDays').classList.toggle('active',mode==='days');$('modeMonths').classList.toggle('active',mode==='months');$('modeDays').setAttribute('aria-pressed',String(mode==='days'));$('modeMonths').setAttribute('aria-pressed',String(mode==='months'));$('modeExplain').textContent=mode==='days'?'Adiciona dias corridos exatos, incluindo fins de semana e feriados. Ex.: 07/07/2026 + 60 dias = 05/09/2026.':'Soma meses reais do calendário, sem presumir 30 dias por mês. Ex.: 07/07/2026 + 2 meses = 07/09/2026.';select(mode==='days'?60:3,unit);}
+$('modeDays').addEventListener('click',()=>{mode='days';render();});$('modeMonths').addEventListener('click',()=>{mode='months';render();});
+$('applyCustom').addEventListener('click',()=>{const n=Number($('customAmount').value),unit=$('customUnit').value;if(!Number.isSafeInteger(n)||n<1||n>(unit==='days'?36500:unit==='months'?1200:100)){$('error').hidden=false;$('error').textContent='Informe um prazo inteiro válido (até 36.500 dias, 1.200 meses ou 100 anos).';return;}mode=unit==='days'?'days':'months';render();select(n,unit);});
+$('exampleBtn').addEventListener('click',()=>{$('product').value='Queijo (exemplo)';$('baseDate').value='2026-07-07';manuallyChanged=true;mode='days';render();select(60,'days');});
+$('baseDate').addEventListener('change',()=>{manuallyChanged=true;update();});$('product').addEventListener('input',update);$('todayBtn').addEventListener('click',()=>{manuallyChanged=true;$('baseDate').value=todayBR();update();});$('calculate').addEventListener('click',update);
+$('copy').addEventListener('click',async()=>{if(!latest)return;const output=`Produto: ${latest.product}\nFabricação: ${latest.base}\nPrazo: ${latest.period}\nData calculada: ${latest.end}\nConfira a validade indicada pelo fabricante.`;try{await navigator.clipboard.writeText(output);$('copy').textContent='✓ Copiado';setTimeout(()=>$('copy').textContent='⧉ Copiar resultado',1600);}catch{$('error').hidden=false;$('error').textContent='Não foi possível copiar. Selecione o resultado manualmente.';}});
+$('print').addEventListener('click',()=>{if(latest)window.print();});
+async function onlineTime(){try{const controller=new AbortController();const t=setTimeout(()=>controller.abort(),3500);let response;try{response=await fetch('https://worldtimeapi.org/api/timezone/America/Sao_Paulo',{signal:controller.signal,cache:'no-store'});}finally{clearTimeout(t);}if(!response.ok)throw Error('offline');const obj=await response.json();if(!obj.datetime||!Number.isFinite(Date.parse(obj.datetime)))throw Error('invalid');const online=todayBR(new Date(obj.datetime));if(!manuallyChanged){$('baseDate').value=online;update();}$('clockInfo').textContent='Data atual de Brasília consultada pela internet. Datas futuras são calculadas localmente, sem depender da conexão.';}catch{$('clockInfo').textContent='Data atual obtida do relógio do aparelho no fuso de Brasília. Consulta online indisponível.';}}
+$('baseDate').value=todayBR();render();onlineTime();

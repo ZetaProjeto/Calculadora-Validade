@@ -1,25 +1,25 @@
-# ValidaBR — Calculadora de validade
+# ValidaBR v2 — calculadora de datas de validade
 
-Página estática HTML/CSS/JavaScript pronta para GitHub Pages.
+Projeto estático para GitHub Pages. Arquivos: `index.html`, `style.css`, `script.js`.
 
-## Publicar
+## Correção da versão 2
 
-1. Crie um repositório no GitHub, por exemplo `calculadora-validade`.
-2. Envie `index.html`, `style.css` e `script.js` para a raiz da branch `main`.
-3. Entre em **Settings → Pages → Build and deployment**.
-4. Em **Source**, selecione **Deploy from a branch** e escolha **main / (root)**. Salve.
-5. Abra `https://SEU-USUARIO.github.io/calculadora-validade/` após a publicação.
+- **Dias corridos** (padrão): atalhos de 30, 60, 90, 180 e 365 dias, contando a partir da fabricação sem incluir o dia inicial como dia transcorrido.
+- **Meses de calendário**: atalhos de 1, 2, 3, 6 e 12 meses; se não houver dia equivalente no mês de chegada, usa o último dia.
+- Prazo personalizado por dias, meses ou anos. O método utilizado aparece no resultado.
+- Exemplo de conferência: fabricação `07/07/2026`, adicionar **60 dias corridos** ⇒ `05/09/2026`; adicionar **2 meses de calendário** ⇒ `07/09/2026`.
+- Horário de Brasília (`America/Sao_Paulo`) para sugerir a data inicial. A consulta online é opcional, com fallback para o relógio local.
 
-## Regras do cálculo
+## Publicação
 
-- Meses são meses civis, sem assumir 30 dias. Se não houver o dia de origem no mês de destino, usa-se o último dia daquele mês.
-- Anos equivalem a 12 meses para o cálculo. Dias personalizados são dias corridos.
-- Sábados, domingos e feriados não alteram automaticamente uma validade.
-- O cálculo usa o calendário gregoriano. A data atual considera `America/Sao_Paulo`, com tentativa de verificação via `worldtimeapi.org`, e fallback para o relógio do dispositivo.
-- Prazos e resultados não são avaliação de vida útil nem autorização sanitária. Informe somente prazos tecnicamente justificados.
+Crie um repositório, envie os três arquivos para a raiz e habilite **Settings → Pages → Deploy from a branch → main / (root)**.
 
-## Referências
+## Limites e segurança alimentar
 
-- RDC Anvisa 727/2022: requisitos de rotulagem de alimentos embalados.
-- Guia Anvisa nº 16, versão 3 (2025): orientação para determinação técnica da vida útil de alimentos.
-- Outras categorias de produtos podem ter requisitos diferentes.
+O aplicativo **não define a vida útil** de alimentos. Para queijos e outros perecíveis, respeite a data impressa, o armazenamento e as orientações do fabricante. **Não substitua ou prorrogue a validade de um rótulo com a data calculada.** A conversão de meses em dias depende da unidade de prazo efetivamente definida pelo responsável técnico: não há equivalência geral obrigatória de 1 mês = 30 dias.
+
+Fontes:
+- https://www.gov.br/anvisa/pt-br/assuntos/noticias-anvisa/2025/anvisa-atualiza-guia-sobre-validade-de-alimentos/
+- https://www.gov.br/anvisa/pt-br/assuntos/noticias-anvisa/2018/guia-orienta-sobre-prazos-de-validade-de-alimentos/
+
+Sem dependências, instalação ou chave de API.
